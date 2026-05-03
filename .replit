@@ -11,27 +11,6 @@ env = { "CI" = "true" }
 [workflows]
 runButton = "Project"
 
-[[workflows.workflow]]
-name = "Project"
-mode = "parallel"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "JS Visualizer (Angular)"
-
-[[workflows.workflow]]
-name = "JS Visualizer (Angular)"
-author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "webview"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pnpm --filter @workspace/js-visualizer run dev"
-waitForPort = 4200
-
 [agent]
 stack = "PNPM_WORKSPACE"
 expertMode = true
@@ -51,3 +30,7 @@ externalPort = 8080
 [[ports]]
 localPort = 8081
 externalPort = 80
+
+[[ports]]
+localPort = 20428
+externalPort = 3001

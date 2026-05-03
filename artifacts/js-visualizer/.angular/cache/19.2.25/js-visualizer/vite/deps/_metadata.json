@@ -1,43 +1,43 @@
 {
-  "hash": "33093b0f",
+  "hash": "42182c40",
   "configHash": "3d7b40be",
-  "lockfileHash": "f92dbf22",
-  "browserHash": "b8a7b058",
+  "lockfileHash": "28dfca9c",
+  "browserHash": "d0e23061",
   "optimized": {
     "@angular/common": {
       "src": "../../../../../../../../node_modules/.pnpm/@angular+common@19.2.21_@angular+core@19.2.21_rxjs@7.8.2_zone.js@0.15.1__rxjs@7.8.2/node_modules/@angular/common/fesm2022/common.mjs",
       "file": "@angular_common.js",
-      "fileHash": "48d0b64f",
+      "fileHash": "8b6270b0",
       "needsInterop": false
     },
     "@angular/common/http": {
       "src": "../../../../../../../../node_modules/.pnpm/@angular+common@19.2.21_@angular+core@19.2.21_rxjs@7.8.2_zone.js@0.15.1__rxjs@7.8.2/node_modules/@angular/common/fesm2022/http.mjs",
       "file": "@angular_common_http.js",
-      "fileHash": "95444e45",
+      "fileHash": "d553d889",
       "needsInterop": false
     },
     "@angular/core": {
       "src": "../../../../../../../../node_modules/.pnpm/@angular+core@19.2.21_rxjs@7.8.2_zone.js@0.15.1/node_modules/@angular/core/fesm2022/core.mjs",
       "file": "@angular_core.js",
-      "fileHash": "b0fde24f",
+      "fileHash": "d7f4d59b",
       "needsInterop": false
     },
     "@angular/platform-browser": {
       "src": "../../../../../../../../node_modules/.pnpm/@angular+platform-browser@19.2.21_@angular+animations@19.2.21_@angular+common@19.2.21_@_23314ef80668c302d8dcb00cb43e7384/node_modules/@angular/platform-browser/fesm2022/platform-browser.mjs",
       "file": "@angular_platform-browser.js",
-      "fileHash": "2a720ed5",
+      "fileHash": "c3229b6d",
       "needsInterop": false
     }
   },
   "chunks": {
-    "chunk-FJD3EIY6": {
-      "file": "chunk-FJD3EIY6.js"
+    "chunk-3UJXACW2": {
+      "file": "chunk-3UJXACW2.js"
     },
-    "chunk-A224FZ2P": {
-      "file": "chunk-A224FZ2P.js"
+    "chunk-SPHTDOOV": {
+      "file": "chunk-SPHTDOOV.js"
     },
-    "chunk-AAIUAMNO": {
-      "file": "chunk-AAIUAMNO.js"
+    "chunk-35ZT7255": {
+      "file": "chunk-35ZT7255.js"
     },
     "chunk-FRLOSPEB": {
       "file": "chunk-FRLOSPEB.js"

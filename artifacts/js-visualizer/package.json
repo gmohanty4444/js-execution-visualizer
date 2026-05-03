@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "NG_CLI_ANALYTICS=false ng serve --host 0.0.0.0 --port 4200 --allowed-hosts all",
-    "build": "ng build",
+    "dev": "NG_CLI_ANALYTICS=false ng serve --host 0.0.0.0 --port $PORT --allowed-hosts all",
+    "build": "NG_CLI_ANALYTICS=false ng build",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

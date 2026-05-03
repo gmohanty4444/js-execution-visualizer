@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "JS Execution Visualizer"
+version = "1.0.0"
+id = "artifacts/js-visualizer"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20428
+
+[services.development]
+run = "pnpm --filter @workspace/js-visualizer run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/js-visualizer", "run", "build" ]
+publicDir = "artifacts/js-visualizer/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20428"
+BASE_PATH = "/"

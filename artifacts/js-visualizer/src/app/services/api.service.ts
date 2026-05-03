@@ -6,11 +6,8 @@ export interface AnalysisResult {
   steps: string[];
 }
 
-@Injectable({
-  providedIn: "root",
-})
+@Injectable({ providedIn: "root" })
 export class ApiService {
-  /** Relative URL — routed through the dev proxy (dev) or Replit proxy (prod). */
   private readonly analyzeUrl = "/api/analyze";
 
   constructor(private http: HttpClient) {}
