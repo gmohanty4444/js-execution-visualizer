@@ -1,0 +1,222 @@
+Build a minimal full-stack web application called **“JS Execution Visualizer”** focused ONLY on synchronous JavaScript execution (no async yet).
+
+### 🎯 Goal
+
+Allow a user to paste simple JavaScript code and see a **step-by-step execution breakdown**, focusing on:
+
+* Execution Context creation
+* Variable hoisting
+* Line-by-line execution
+* console.log outputs
+
+---
+
+# 🧱 Tech Stack
+
+## Frontend
+
+* Angular (latest stable)
+* Use standalone components (no NgModules)
+* Monaco Editor (for code input)
+* Simple clean UI (no heavy styling frameworks)
+
+## Backend
+
+* Node.js + Express
+* Use Babel parser (@babel/parser) to convert code into AST
+
+---
+
+# 🧩 Features (STRICTLY WEEK 1 ONLY)
+
+## 1. Code Input (Frontend)
+
+* Show a Monaco editor
+* Default code:
+
+```js
+function test() {
+  console.log(a);
+  var a = 10;
+}
+test();
+```
+
+* Button: “Run Code”
+
+---
+
+## 2. Backend API
+
+### POST /analyze
+
+Input:
+
+```json
+{
+  "code": "user pasted code"
+}
+```
+
+Output:
+
+```json
+{
+  "steps": [
+    "Global Execution Context created",
+    "Function 'test' hoisted",
+    "Execution starts",
+    "Calling function test()",
+    "Function Execution Context created",
+    "Variable 'a' hoisted → undefined",
+    "console.log(a) → undefined",
+    "a = 10 assigned"
+  ]
+}
+```
+
+---
+
+## 3. AST Parsing (Backend)
+
+* Use @babel/parser
+* Parse code into AST
+* Walk through:
+
+  * VariableDeclaration (var only for now)
+  * FunctionDeclaration
+  * CallExpression
+  * ExpressionStatement
+
+---
+
+## 4. Execution Simulation Engine (IMPORTANT)
+
+Build a **custom interpreter**, NOT actual JS execution.
+
+Rules:
+
+* Only support:
+
+  * var declarations
+  * function declarations
+  * console.log
+  * function calls
+* Simulate:
+
+  * Global Execution Context
+  * Function Execution Context
+* Maintain:
+
+  * Call stack (array)
+  * Scope variables (object)
+
+---
+
+## 5. Hoisting Logic
+
+When entering a scope:
+
+* Move all `var` declarations to top
+* Initialize them as `undefined`
+* Log step:
+  → "Variable 'a' hoisted → undefined"
+
+---
+
+## 6. Execution Flow
+
+Simulate line-by-line:
+
+* When console.log is encountered:
+
+  * Resolve variable value from scope
+  * Output:
+    → "console.log(a) → undefined"
+
+---
+
+## 7. Frontend Output UI
+
+Split layout:
+
+* Left: Code editor
+* Right: Execution steps
+
+Render steps as:
+
+1. Global Execution Context created
+2. Function 'test' hoisted
+3. ...
+
+No animations needed.
+
+---
+
+# 🚫 Out of Scope (DO NOT BUILD)
+
+* No async (setTimeout, Promise)
+* No let/const
+* No closures
+* No React concepts
+* No authentication
+* No database
+
+---
+
+# 📁 Suggested Folder Structure
+
+## Backend
+
+* /server
+
+  * index.js
+  * parser.js
+  * interpreter.js
+
+## Frontend
+
+* /src/app
+
+  * editor.component.ts
+  * result.component.ts
+  * api.service.ts
+
+---
+
+# 🧪 Example Input
+
+```js
+console.log(a);
+var a = 10;
+```
+
+Expected Output:
+
+* Global Execution Context created
+* Variable 'a' hoisted → undefined
+* Execution starts
+* console.log(a) → undefined
+* a = 10 assigned
+
+---
+
+# ⚙️ Additional Constraints
+
+* Keep code modular and readable
+* Add comments explaining interpreter logic
+* Avoid overengineering
+* Focus on clarity over completeness
+
+---
+
+# ✅ Deliverables
+
+* Working Angular frontend
+* Working Node backend
+* Functional API integration
+* Correct step-by-step execution output for simple synchronous code
+
+---
+
+Only implement what is specified above. Keep it minimal, correct, and extensible for Week 2 (async support).
