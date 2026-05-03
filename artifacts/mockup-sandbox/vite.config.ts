@@ -58,7 +58,11 @@ export default defineConfig({
   server: {
     port,
     host: "0.0.0.0",
-    allowedHosts: true,
+    // Added the specific host from your error and a wildcard for Replit domains
+    allowedHosts: [
+      "d0435b30-78d7-4278-96c6-d7937dd03029-00-31gm94yka4rj6.pike.replit.dev",
+      ".replit.dev",
+    ],
     fs: {
       strict: true,
     },
