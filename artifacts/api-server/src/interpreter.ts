@@ -171,6 +171,22 @@ function executeBody(
   }
 }
 
+/** Node types that require constructs outside the Week 1–2 scope. */
+const UNSUPPORTED_NODES: Record<string, string> = {
+  ForStatement:        "for loops are not supported — only synchronous statements, setTimeout, and Promise.resolve().then are simulated",
+  ForInStatement:      "for...in loops are not supported",
+  ForOfStatement:      "for...of loops are not supported",
+  WhileStatement:      "while loops are not supported",
+  DoWhileStatement:    "do...while loops are not supported",
+  TryStatement:        "try/catch is not supported",
+  ThrowStatement:      "throw is not supported",
+  SwitchStatement:     "switch statements are not supported",
+  ClassDeclaration:    "class declarations are not supported",
+  ImportDeclaration:   "import/export is not supported",
+  ExportNamedDeclaration: "import/export is not supported",
+  AwaitExpression:     "async/await is not supported — use Promise.resolve().then instead",
+};
+
 function executeNode(
   node: ASTNode,
   scope: Scope,
@@ -178,6 +194,19 @@ function executeNode(
   microtaskQueue: QueueEntry[],
   macrotaskQueue: QueueEntry[],
 ): void {
+  // Reject unsupported constructs with a clear message
+  if (node.type in UNSUPPORTED_NODES) {
+    throw new Error(
+      `Unsupported construct: ${UNSUPPORTED_NODES[node.type as keyof typeof UNSUPPORTED_NODES]}.\n\n` +
+      `This simulator supports:\n` +
+      `  • var declarations\n` +
+      `  • function declarations and calls\n` +
+      `  • console.log()\n` +
+      `  • setTimeout(callback, delay)\n` +
+      `  • Promise.resolve().then(callback)`,
+    );
+  }
+
   switch (node.type) {
     case "FunctionDeclaration":
       break;
@@ -191,6 +220,12 @@ function executeNode(
             steps.push(`${declarator.id.name} = ${formatValue(value)} assigned`);
           }
         }
+      } else {
+        // let / const — inform the user
+        throw new Error(
+          `'${node.kind}' declarations are not supported — use 'var' instead.\n\n` +
+          `This simulator only handles 'var' declarations to demonstrate hoisting behaviour.`,
+        );
       }
       break;
 
