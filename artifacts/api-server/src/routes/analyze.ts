@@ -7,10 +7,7 @@ const router: IRouter = Router();
  * POST /api/analyze
  *
  * Body: { code: string }
- * Response: { steps: string[] }
- *
- * Runs the execution simulator against the submitted JS code and returns
- * an ordered list of step descriptions.
+ * Response: { steps: string[], queues: { microtasks: string[], macrotasks: string[] } }
  */
 router.post("/analyze", (req, res) => {
   const { code } = req.body as { code?: string };
@@ -26,8 +23,8 @@ router.post("/analyze", (req, res) => {
   }
 
   try {
-    const steps = analyzeCode(code);
-    res.json({ steps });
+    const result = analyzeCode(code);
+    res.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     res.status(400).json({ error: message });

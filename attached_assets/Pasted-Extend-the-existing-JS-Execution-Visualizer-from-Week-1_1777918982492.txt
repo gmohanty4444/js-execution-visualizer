@@ -1,0 +1,275 @@
+Extend the existing **“JS Execution Visualizer”** (from Week 1) to support **basic asynchronous JavaScript behavior**, specifically:
+
+* setTimeout (macrotask queue)
+* Promise.resolve().then (microtask queue)
+* Event loop simulation
+
+Do NOT implement full async JavaScript—only controlled simulation for learning purposes.
+
+---
+
+# 🎯 Goal
+
+When a user runs code, the app should clearly show:
+
+* Call Stack execution
+* Microtask Queue
+* Macrotask Queue
+* Final execution order
+
+---
+
+# 🧩 Features (STRICTLY WEEK 2)
+
+## 1. Async Code Input Example
+
+Default editor code:
+
+```js
+console.log("start");
+
+setTimeout(() => {
+  console.log("timeout");
+}, 0);
+
+Promise.resolve().then(() => {
+  console.log("promise");
+});
+
+console.log("end");
+```
+
+---
+
+## 2. Backend API (extend existing)
+
+### POST /analyze
+
+Response format:
+
+```json
+{
+  "steps": [
+    "Global Execution Context created",
+    "Execution starts",
+    "console.log('start') → start",
+
+    "setTimeout registered → moved to Macrotask Queue",
+    "Promise.then registered → moved to Microtask Queue",
+
+    "console.log('end') → end",
+
+    "Call Stack empty → processing Microtasks",
+    "console.log('promise') → promise",
+
+    "Microtasks complete → processing Macrotasks",
+    "console.log('timeout') → timeout"
+  ],
+  "queues": {
+    "microtasks": ["promise callback"],
+    "macrotasks": ["timeout callback"]
+  }
+}
+```
+
+---
+
+# ⚙️ Core Implementation (VERY IMPORTANT)
+
+## 1. Extend Interpreter (interpreter.js)
+
+Add support for:
+
+### A. setTimeout
+
+* Detect CallExpression with callee `setTimeout`
+* Extract callback function
+* Push into:
+  → macrotaskQueue = []
+
+Log:
+→ "setTimeout registered → moved to Macrotask Queue"
+
+---
+
+### B. Promise.resolve().then
+
+Support ONLY this pattern:
+
+```js
+Promise.resolve().then(callback)
+```
+
+* Detect MemberExpression → then
+* Push callback into:
+  → microtaskQueue = []
+
+Log:
+→ "Promise.then registered → moved to Microtask Queue"
+
+---
+
+## 2. Data Structures
+
+Maintain:
+
+```js
+const callStack = [];
+const microtaskQueue = [];
+const macrotaskQueue = [];
+```
+
+---
+
+## 3. Execution Flow (Simulation Engine)
+
+### Phase 1: Synchronous Execution
+
+* Execute all normal statements
+* Populate queues
+
+---
+
+### Phase 2: Event Loop Simulation
+
+After call stack is empty:
+
+#### Step 1: Process Microtasks
+
+* While microtaskQueue not empty:
+
+  * dequeue
+  * execute callback
+  * log output
+
+#### Step 2: Process Macrotasks
+
+* Take ONE macrotask
+* execute it
+* after execution:
+
+  * again process all microtasks
+
+---
+
+## 4. Logging Rules (IMPORTANT)
+
+Every major step must be logged:
+
+Examples:
+
+* "Call Stack → console.log"
+* "Moved to Microtask Queue"
+* "Processing Microtasks"
+* "Processing Macrotasks"
+
+---
+
+# 🖥️ Frontend Changes
+
+## 1. Visualization Panel (NEW)
+
+Add 3 sections:
+
+### A. Call Stack (current execution)
+
+### B. Microtask Queue
+
+### C. Macrotask Queue
+
+Display as simple lists (no complex animations)
+
+---
+
+## 2. Execution Timeline
+
+Continue showing step-by-step logs like Week 1
+
+---
+
+## 3. Optional (if time permits)
+
+Highlight:
+
+* Current phase:
+
+  * "Synchronous Phase"
+  * "Microtask Phase"
+  * "Macrotask Phase"
+
+---
+
+# 🚫 Out of Scope
+
+* No async/await
+* No real timers
+* No multiple setTimeout delays
+* No nested Promises beyond basic .then
+* No browser APIs
+* No concurrency/threading
+
+---
+
+# 🧪 Expected Behavior
+
+Input:
+
+```js
+console.log("start");
+
+setTimeout(() => console.log("timeout"), 0);
+
+Promise.resolve().then(() => console.log("promise"));
+
+console.log("end");
+```
+
+Output order MUST be:
+
+1. start
+2. end
+3. promise
+4. timeout
+
+---
+
+# 📁 Backend Changes
+
+* Update interpreter.js → add queue handling
+* Update parser.js → detect async constructs
+
+---
+
+# 📁 Frontend Changes
+
+* result.component.ts → add queue display
+* Add simple UI sections for:
+
+  * Call Stack
+  * Microtask Queue
+  * Macrotask Queue
+
+---
+
+# ⚠️ Critical Constraints
+
+* Do NOT execute real JS runtime
+* Everything must be simulated
+* Keep logic deterministic and explainable
+* Focus on clarity over completeness
+
+---
+
+# ✅ Deliverables
+
+* Correct simulation of:
+
+  * setTimeout
+  * Promise.then
+* Visible queue states
+* Correct execution order
+* Clean step-by-step explanation
+
+---
+
+Build ONLY what is defined above. This is a learning simulator, not a production JS engine.

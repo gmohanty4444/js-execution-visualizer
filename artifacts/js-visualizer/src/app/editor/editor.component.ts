@@ -12,11 +12,17 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const require: any;
 
-const DEFAULT_CODE = `function test() {
-  console.log(a);
-  var a = 10;
-}
-test();`;
+const DEFAULT_CODE = `console.log("start");
+
+setTimeout(() => {
+  console.log("timeout");
+}, 0);
+
+Promise.resolve().then(() => {
+  console.log("promise");
+});
+
+console.log("end");`;
 
 @Component({
   selector: "app-editor",
@@ -55,7 +61,6 @@ export class EditorComponent implements AfterViewInit, OnDestroy {
         padding: { top: 12, bottom: 12 },
       });
 
-      // Emit initial value so parent starts with the default code.
       this.codeChange.emit(DEFAULT_CODE);
 
       this.editor.onDidChangeModelContent(() => {

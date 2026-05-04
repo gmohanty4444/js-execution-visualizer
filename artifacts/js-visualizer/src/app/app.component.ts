@@ -1,7 +1,7 @@
 import { Component } from "@angular/core";
 import { EditorComponent } from "./editor/editor.component";
 import { ResultComponent } from "./result/result.component";
-import { ApiService, AnalysisResult } from "./services/api.service";
+import { ApiService, AnalysisResult, Queues } from "./services/api.service";
 
 @Component({
   selector: "app-root",
@@ -12,7 +12,7 @@ import { ApiService, AnalysisResult } from "./services/api.service";
       <header class="app-header">
         <div class="header-content">
           <h1>JS Execution Visualizer</h1>
-          <p class="subtitle">Step-by-step synchronous JavaScript execution — Week 1</p>
+          <p class="subtitle">Event loop · Microtask &amp; Macrotask queue simulation — Week 2</p>
         </div>
       </header>
 
@@ -34,7 +34,12 @@ import { ApiService, AnalysisResult } from "./services/api.service";
               <span class="step-count">{{ steps.length }} steps</span>
             }
           </div>
-          <app-result [steps]="steps" [loading]="loading" [error]="error" />
+          <app-result
+            [steps]="steps"
+            [queues]="queues"
+            [loading]="loading"
+            [error]="error"
+          />
         </section>
       </main>
     </div>
@@ -132,6 +137,7 @@ import { ApiService, AnalysisResult } from "./services/api.service";
 export class AppComponent {
   code = "";
   steps: string[] = [];
+  queues: Queues = { microtasks: [], macrotasks: [] };
   loading = false;
   error = "";
 
@@ -146,10 +152,12 @@ export class AppComponent {
     this.loading = true;
     this.error = "";
     this.steps = [];
+    this.queues = { microtasks: [], macrotasks: [] };
 
     this.apiService.analyze(this.code).subscribe({
       next: (result: AnalysisResult) => {
         this.steps = result.steps;
+        this.queues = result.queues ?? { microtasks: [], macrotasks: [] };
         this.loading = false;
       },
       error: (err) => {

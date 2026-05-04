@@ -2,8 +2,14 @@ import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { Observable } from "rxjs";
 
+export interface Queues {
+  microtasks: string[];
+  macrotasks: string[];
+}
+
 export interface AnalysisResult {
   steps: string[];
+  queues: Queues;
 }
 
 @Injectable({ providedIn: "root" })
