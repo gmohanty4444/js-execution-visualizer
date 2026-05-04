@@ -99,6 +99,13 @@ function classifyStep(step: string): string {
     </div>
   `,
   styles: [`
+    :host {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
     .result-wrapper {
       flex: 1;
       overflow-y: auto;
@@ -107,6 +114,7 @@ function classifyStep(step: string): string {
       display: flex;
       flex-direction: column;
       gap: 12px;
+      min-height: 0;
     }
 
     /* ── Queue panels ─────────────────────────────────── */
