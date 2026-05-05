@@ -1,11 +1,9 @@
 /**
- * JS Execution Simulator — Week 2
+ * JS Execution Simulator — Week 2 + Week 3
  *
- * Extends Week 1 (var hoisting, function hoisting, console.log, function calls)
- * with async simulation:
- *   - setTimeout  → macrotask queue
- *   - Promise.resolve().then → microtask queue
- *   - Event loop simulation (sync → microtasks → macrotasks)
+ * Week 1: var hoisting, function hoisting, console.log, function calls
+ * Week 2: setTimeout (macrotask), Promise.resolve().then (microtask), event loop
+ * Week 3: actualOutput capture for Expectation vs Reality comparison
  */
 
 import { parse } from "@babel/parser";
@@ -27,11 +25,12 @@ interface Scope {
 
 interface QueueEntry {
   label: string;
-  node: ASTNode; // ArrowFunctionExpression or FunctionExpression
+  node: ASTNode;
 }
 
 export interface AnalysisOutput {
   steps: string[];
+  actualOutput: string[];
   queues: {
     microtasks: string[];
     macrotasks: string[];
@@ -42,6 +41,7 @@ export interface AnalysisOutput {
 
 export function analyzeCode(code: string): AnalysisOutput {
   const steps: string[] = [];
+  const actualOutput: string[] = [];
   const microtaskQueue: QueueEntry[] = [];
   const macrotaskQueue: QueueEntry[] = [];
 
@@ -60,9 +60,9 @@ export function analyzeCode(code: string): AnalysisOutput {
 
   // ── Phase 2: Synchronous execution ──
   steps.push("Execution starts");
-  executeBody(ast.program.body, globalScope, steps, microtaskQueue, macrotaskQueue);
+  executeBody(ast.program.body, globalScope, steps, actualOutput, microtaskQueue, macrotaskQueue);
 
-  // Capture queue snapshot (what was registered during sync phase)
+  // Capture queue snapshot
   const queueSnapshot = {
     microtasks: microtaskQueue.map((e) => e.label),
     macrotasks: macrotaskQueue.map((e) => e.label),
@@ -71,23 +71,21 @@ export function analyzeCode(code: string): AnalysisOutput {
   // ── Phase 3: Event Loop ──
   steps.push("Call Stack is empty → Event Loop starts");
 
-  // Drain microtasks first
-  drainMicrotasks(microtaskQueue, macrotaskQueue, globalScope, steps);
+  drainMicrotasks(microtaskQueue, macrotaskQueue, globalScope, steps, actualOutput);
 
-  // Then process macrotasks (one at a time, flushing microtasks after each)
   if (macrotaskQueue.length > 0) {
     steps.push("Microtasks complete → Processing Macrotask Queue");
     while (macrotaskQueue.length > 0) {
       const task = macrotaskQueue.shift()!;
       steps.push(`Macrotask dequeued → ${task.label}`);
-      executeCallback(task.node, globalScope, steps, microtaskQueue, macrotaskQueue);
-      drainMicrotasks(microtaskQueue, macrotaskQueue, globalScope, steps);
+      executeCallback(task.node, globalScope, steps, actualOutput, microtaskQueue, macrotaskQueue);
+      drainMicrotasks(microtaskQueue, macrotaskQueue, globalScope, steps, actualOutput);
     }
   }
 
   steps.push("Event Loop complete");
 
-  return { steps, queues: queueSnapshot };
+  return { steps, actualOutput, queues: queueSnapshot };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -97,13 +95,14 @@ function drainMicrotasks(
   macrotaskQueue: QueueEntry[],
   scope: Scope,
   steps: string[],
+  actualOutput: string[],
 ): void {
   if (microtaskQueue.length === 0) return;
   steps.push("Processing Microtask Queue");
   while (microtaskQueue.length > 0) {
     const task = microtaskQueue.shift()!;
     steps.push(`Microtask dequeued → ${task.label}`);
-    executeCallback(task.node, scope, steps, microtaskQueue, macrotaskQueue);
+    executeCallback(task.node, scope, steps, actualOutput, microtaskQueue, macrotaskQueue);
   }
 }
 
@@ -111,6 +110,7 @@ function executeCallback(
   node: ASTNode,
   scope: Scope,
   steps: string[],
+  actualOutput: string[],
   microtaskQueue: QueueEntry[],
   macrotaskQueue: QueueEntry[],
 ): void {
@@ -119,11 +119,9 @@ function executeCallback(
     node.type === "FunctionExpression"
   ) {
     if (node.body?.type === "BlockStatement") {
-      // () => { ... } — block body
-      executeBody(node.body.body, scope, steps, microtaskQueue, macrotaskQueue);
+      executeBody(node.body.body, scope, steps, actualOutput, microtaskQueue, macrotaskQueue);
     } else if (node.body) {
-      // () => expr — concise body is a single expression
-      executeExpr(node.body, scope, steps, microtaskQueue, macrotaskQueue);
+      executeExpr(node.body, scope, steps, actualOutput, microtaskQueue, macrotaskQueue);
     }
   }
 }
@@ -163,38 +161,39 @@ function executeBody(
   body: ASTNode[],
   scope: Scope,
   steps: string[],
+  actualOutput: string[],
   microtaskQueue: QueueEntry[],
   macrotaskQueue: QueueEntry[],
 ): void {
   for (const node of body) {
-    executeNode(node, scope, steps, microtaskQueue, macrotaskQueue);
+    executeNode(node, scope, steps, actualOutput, microtaskQueue, macrotaskQueue);
   }
 }
 
 /** Node types that require constructs outside the Week 1–2 scope. */
 const UNSUPPORTED_NODES: Record<string, string> = {
-  ForStatement:        "for loops are not supported — only synchronous statements, setTimeout, and Promise.resolve().then are simulated",
-  ForInStatement:      "for...in loops are not supported",
-  ForOfStatement:      "for...of loops are not supported",
-  WhileStatement:      "while loops are not supported",
-  DoWhileStatement:    "do...while loops are not supported",
-  TryStatement:        "try/catch is not supported",
-  ThrowStatement:      "throw is not supported",
-  SwitchStatement:     "switch statements are not supported",
-  ClassDeclaration:    "class declarations are not supported",
-  ImportDeclaration:   "import/export is not supported",
+  ForStatement:           "for loops are not supported — only synchronous statements, setTimeout, and Promise.resolve().then are simulated",
+  ForInStatement:         "for...in loops are not supported",
+  ForOfStatement:         "for...of loops are not supported",
+  WhileStatement:         "while loops are not supported",
+  DoWhileStatement:       "do...while loops are not supported",
+  TryStatement:           "try/catch is not supported",
+  ThrowStatement:         "throw is not supported",
+  SwitchStatement:        "switch statements are not supported",
+  ClassDeclaration:       "class declarations are not supported",
+  ImportDeclaration:      "import/export is not supported",
   ExportNamedDeclaration: "import/export is not supported",
-  AwaitExpression:     "async/await is not supported — use Promise.resolve().then instead",
+  AwaitExpression:        "async/await is not supported — use Promise.resolve().then instead",
 };
 
 function executeNode(
   node: ASTNode,
   scope: Scope,
   steps: string[],
+  actualOutput: string[],
   microtaskQueue: QueueEntry[],
   macrotaskQueue: QueueEntry[],
 ): void {
-  // Reject unsupported constructs with a clear message
   if (node.type in UNSUPPORTED_NODES) {
     throw new Error(
       `Unsupported construct: ${UNSUPPORTED_NODES[node.type as keyof typeof UNSUPPORTED_NODES]}.\n\n` +
@@ -221,7 +220,6 @@ function executeNode(
           }
         }
       } else {
-        // let / const — inform the user
         throw new Error(
           `'${node.kind}' declarations are not supported — use 'var' instead.\n\n` +
           `This simulator only handles 'var' declarations to demonstrate hoisting behaviour.`,
@@ -230,7 +228,7 @@ function executeNode(
       break;
 
     case "ExpressionStatement":
-      executeExpr(node.expression, scope, steps, microtaskQueue, macrotaskQueue);
+      executeExpr(node.expression, scope, steps, actualOutput, microtaskQueue, macrotaskQueue);
       break;
 
     case "ReturnStatement":
@@ -245,6 +243,7 @@ function executeExpr(
   node: ASTNode,
   scope: Scope,
   steps: string[],
+  actualOutput: string[],
   microtaskQueue: QueueEntry[],
   macrotaskQueue: QueueEntry[],
 ): void {
@@ -271,6 +270,8 @@ function executeExpr(
       argTexts.push(getExprText(arg));
       argVals.push(evaluateExpr(arg, scope));
     }
+    const loggedValue = argVals.map(formatRaw).join(" ");
+    actualOutput.push(loggedValue);
     steps.push(`Call Stack → console.log`);
     steps.push(
       `console.log(${argTexts.join(", ")}) → ${argVals.map(formatValue).join(", ")}`,
@@ -318,7 +319,7 @@ function executeExpr(
       const fnScope: Scope = { ...scope };
       steps.push("Function Execution Context created");
       hoistDeclarations(fnDef.node.body.body, fnScope, steps);
-      executeBody(fnDef.node.body.body, fnScope, steps, microtaskQueue, macrotaskQueue);
+      executeBody(fnDef.node.body.body, fnScope, steps, actualOutput, microtaskQueue, macrotaskQueue);
       steps.push(`Function '${fnName}' execution complete → popped from Call Stack`);
     } else {
       steps.push(`Calling ${fnName}() [not defined in scope]`);
@@ -367,6 +368,16 @@ function formatValue(value: unknown): string {
   if (value === undefined) return "undefined";
   if (value === null)      return "null";
   if (typeof value === "string") return `"${value}"`;
+  if (typeof value === "object" && (value as FunctionDef).__isFn)
+    return `[Function: ${(value as FunctionDef).name}]`;
+  return String(value);
+}
+
+/** Raw format for actualOutput — no quotes around strings, matches real console.log */
+function formatRaw(value: unknown): string {
+  if (value === undefined) return "undefined";
+  if (value === null)      return "null";
+  if (typeof value === "string") return value;
   if (typeof value === "object" && (value as FunctionDef).__isFn)
     return `[Function: ${(value as FunctionDef).name}]`;
   return String(value);

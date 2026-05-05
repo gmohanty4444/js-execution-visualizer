@@ -1,6 +1,6 @@
 import { Component, Input } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { Queues } from "../services/api.service";
+import { Queues, DiffEntry } from "../services/api.service";
 
 function classifyStep(step: string): string {
   if (step.includes("Execution Context created"))      return "context";
@@ -25,8 +25,132 @@ function classifyStep(step: string): string {
   template: `
     <div class="result-wrapper">
 
-      <!-- ── Queue Panels (shown once results arrive) ── -->
-      @if (!loading && steps.length > 0) {
+      <!-- ── Error ── -->
+      @if (error) {
+        <div class="error-block">
+          <div class="error-title">Error</div>
+          <pre class="error-body">{{ error }}</pre>
+        </div>
+      }
+
+      <!-- ── Loading ── -->
+      @if (loading) {
+        <div class="state-msg">
+          <div class="spinner"></div>
+          <span>Analyzing…</span>
+        </div>
+      }
+
+      <!-- ── Empty state ── -->
+      @if (!loading && !error && steps.length === 0) {
+        <div class="empty-state">
+          <p>Paste JavaScript in the editor and click <strong>Run Code</strong> to see execution steps.</p>
+          <p class="empty-hint">Optionally, type your predicted output in the panel below the editor before running — the tool will compare your prediction against the actual result.</p>
+        </div>
+      }
+
+      <!-- ══ COMPARISON MODE (prediction provided) ══ -->
+      @if (!loading && !error && hasPrediction && actualOutput.length > 0) {
+
+        <!-- Section 1 & 2: Side-by-side prediction vs actual -->
+        <div class="compare-grid">
+          <div class="compare-col">
+            <div class="col-label">Your Prediction</div>
+            <ol class="output-list">
+              @for (line of predictedOutput; track $index) {
+                <li class="output-item"
+                  [class.match]="actualOutput[$index] === line"
+                  [class.mismatch]="actualOutput[$index] !== line">
+                  <span class="output-num">{{ $index + 1 }}</span>
+                  <span class="output-text">{{ line }}</span>
+                  @if (actualOutput[$index] === line) {
+                    <span class="match-icon">✓</span>
+                  } @else {
+                    <span class="mismatch-icon">✗</span>
+                  }
+                </li>
+              }
+              @if (predictedOutput.length < actualOutput.length) {
+                @for (extra of missingLines; track $index) {
+                  <li class="output-item missing">
+                    <span class="output-num">{{ predictedOutput.length + $index + 1 }}</span>
+                    <span class="output-text missing-text">(missing)</span>
+                    <span class="mismatch-icon">✗</span>
+                  </li>
+                }
+              }
+            </ol>
+          </div>
+
+          <div class="compare-divider"></div>
+
+          <div class="compare-col">
+            <div class="col-label">Actual Output</div>
+            <ol class="output-list">
+              @for (line of actualOutput; track $index) {
+                <li class="output-item"
+                  [class.match]="predictedOutput[$index] === line"
+                  [class.mismatch]="predictedOutput[$index] !== line">
+                  <span class="output-num">{{ $index + 1 }}</span>
+                  <span class="output-text">{{ line }}</span>
+                  @if (predictedOutput[$index] === line) {
+                    <span class="match-icon">✓</span>
+                  } @else {
+                    <span class="mismatch-icon">✗</span>
+                  }
+                </li>
+              }
+            </ol>
+          </div>
+        </div>
+
+        <!-- Section 3: Mistake breakdown -->
+        @if (diff.length > 0) {
+          <div class="section">
+            <div class="section-label">Mistake Breakdown</div>
+            <div class="diff-list">
+              @for (entry of diff; track entry.index) {
+                <div class="diff-item">
+                  <div class="diff-pos">Position {{ entry.index + 1 }}</div>
+                  <div class="diff-row">
+                    <span class="diff-tag correct-tag">Expected</span>
+                    <code class="diff-val correct-val">{{ entry.expected ?? "(nothing)" }}</code>
+                  </div>
+                  <div class="diff-row">
+                    <span class="diff-tag wrong-tag">You wrote</span>
+                    <code class="diff-val wrong-val">{{ entry.got ?? "(nothing)" }}</code>
+                  </div>
+                  <div class="diff-reason">
+                    <span class="reason-icon">💡</span>
+                    {{ entry.reason }}
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Section 4: Concepts -->
+        @if (concepts.length > 0) {
+          <div class="section">
+            <div class="section-label">Concepts Involved</div>
+            <div class="concept-badges">
+              @for (tag of concepts; track tag) {
+                <span class="concept-badge">{{ tag }}</span>
+              }
+            </div>
+          </div>
+        }
+
+        <div class="steps-divider">
+          <span>Execution Steps</span>
+        </div>
+      }
+
+      <!-- ══ EXECUTION STEPS (always shown when results exist) ══ -->
+      @if (!loading && !error && steps.length > 0) {
+
+        <!-- Queue panels -->
         <div class="queues-section">
           <div class="queue-card micro-card">
             <div class="queue-title">
@@ -68,24 +192,7 @@ function classifyStep(step: string): string {
             <div class="phase-badge macro-badge">Macrotask Phase</div>
           </div>
         </div>
-      }
 
-      <!-- ── States ── -->
-      @if (loading) {
-        <div class="state-msg">
-          <div class="spinner"></div>
-          <span>Analyzing…</span>
-        </div>
-      } @else if (error) {
-        <div class="error-block">
-          <div class="error-title">Error</div>
-          <pre class="error-body">{{ error }}</pre>
-        </div>
-      } @else if (steps.length === 0) {
-        <div class="state-msg empty">
-          Paste JavaScript in the editor and click <strong>Run Code</strong> to see the execution steps.
-        </div>
-      } @else {
         <div class="steps-label">Execution Steps</div>
         <ol class="steps-list">
           @for (step of steps; track $index) {
@@ -96,6 +203,7 @@ function classifyStep(step: string): string {
           }
         </ol>
       }
+
     </div>
   `,
   styles: [`
@@ -113,11 +221,208 @@ function classifyStep(step: string): string {
       background: #0f1117;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
       min-height: 0;
     }
 
-    /* ── Queue panels ─────────────────────────────────── */
+    /* ── Empty state ────────────────────────────────── */
+    .empty-state {
+      padding-top: 20px;
+      color: #64748b;
+      font-size: 0.88rem;
+      line-height: 1.7;
+    }
+    .empty-state strong { color: #94a3b8; }
+    .empty-hint { margin-top: 8px; color: #3d4f66; font-size: 0.8rem; }
+
+    /* ── Comparison grid ────────────────────────────── */
+    .compare-grid {
+      display: flex;
+      gap: 0;
+      background: #161b27;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .compare-col {
+      flex: 1;
+      padding: 12px 14px;
+      min-width: 0;
+    }
+
+    .compare-divider {
+      width: 1px;
+      background: #2d3748;
+      flex-shrink: 0;
+    }
+
+    .col-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 10px;
+    }
+
+    .output-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .output-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 8px;
+      border-radius: 4px;
+      font-family: 'Fira Code', Consolas, monospace;
+      font-size: 0.82rem;
+    }
+
+    .output-item.match    { background: #052e16; border: 1px solid #166534; }
+    .output-item.mismatch { background: #2d0a0a; border: 1px solid #7f1d1d; }
+    .output-item.missing  { background: #1a1a0a; border: 1px solid #44400a; opacity: 0.7; }
+
+    .output-num {
+      font-size: 0.68rem;
+      color: #475569;
+      min-width: 16px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .output-text { flex: 1; color: #cbd5e1; }
+    .missing-text { color: #475569; font-style: italic; }
+
+    .match-icon    { color: #4ade80; font-size: 0.75rem; flex-shrink: 0; }
+    .mismatch-icon { color: #f87171; font-size: 0.75rem; flex-shrink: 0; }
+
+    /* ── Section wrapper ────────────────────────────── */
+    .section { display: flex; flex-direction: column; gap: 8px; }
+
+    .section-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+
+    /* ── Diff list ──────────────────────────────────── */
+    .diff-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .diff-item {
+      background: #161b27;
+      border: 1px solid #2d3748;
+      border-left: 3px solid #f87171;
+      border-radius: 6px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .diff-pos {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .diff-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .diff-tag {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+      min-width: 68px;
+      text-align: center;
+    }
+
+    .correct-tag { background: #052e16; color: #4ade80; border: 1px solid #166534; }
+    .wrong-tag   { background: #2d0a0a; color: #f87171; border: 1px solid #7f1d1d; }
+
+    .diff-val {
+      font-family: 'Fira Code', Consolas, monospace;
+      font-size: 0.85rem;
+      padding: 2px 8px;
+      border-radius: 3px;
+    }
+
+    .correct-val { background: #052e16; color: #86efac; }
+    .wrong-val   { background: #2d0a0a; color: #fca5a5; }
+
+    .diff-reason {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      line-height: 1.5;
+      display: flex;
+      gap: 6px;
+      align-items: flex-start;
+      padding-top: 2px;
+    }
+
+    .reason-icon { flex-shrink: 0; }
+
+    /* ── Concepts ───────────────────────────────────── */
+    .concept-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .concept-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #1e2d4a;
+      color: #93c5fd;
+      border: 1px solid #1d4ed8;
+      letter-spacing: 0.03em;
+      cursor: default;
+    }
+
+    .concept-badge:hover { background: #1e3a5f; }
+
+    /* ── Steps divider ──────────────────────────────── */
+    .steps-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #2d3748;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .steps-divider::before,
+    .steps-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #2d3748;
+    }
+
+    /* ── Queue panels ───────────────────────────────── */
     .queues-section {
       display: flex;
       flex-direction: column;
@@ -146,20 +451,11 @@ function classifyStep(step: string): string {
       margin-bottom: 8px;
     }
 
-    .queue-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
+    .queue-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .micro-dot { background: #a78bfa; }
     .macro-dot { background: #f59e0b; }
 
-    .queue-empty {
-      font-size: 0.78rem;
-      color: #475569;
-      font-style: italic;
-    }
+    .queue-empty { font-size: 0.78rem; color: #475569; font-style: italic; }
 
     .queue-list {
       list-style: none;
@@ -178,7 +474,7 @@ function classifyStep(step: string): string {
     .micro-item { background: #2d1f4e; color: #c4b5fd; border: 1px solid #5b21b6; }
     .macro-item { background: #3d2400; color: #fbbf24; border: 1px solid #92400e; }
 
-    /* ── Phase legend ─────────────────────────────────── */
+    /* ── Phase legend ───────────────────────────────── */
     .phase-legend {
       display: flex;
       align-items: center;
@@ -198,10 +494,9 @@ function classifyStep(step: string): string {
     .sync-badge  { background: #1e3a5f; color: #93c5fd; }
     .micro-badge { background: #2d1f4e; color: #c4b5fd; }
     .macro-badge { background: #3d2400; color: #fbbf24; }
-
     .phase-arrow { color: #475569; font-size: 0.75rem; }
 
-    /* ── Steps ────────────────────────────────────────── */
+    /* ── Steps ──────────────────────────────────────── */
     .steps-label {
       font-size: 0.72rem;
       font-weight: 700;
@@ -261,7 +556,7 @@ function classifyStep(step: string): string {
       word-break: break-word;
     }
 
-    /* ── Misc states ──────────────────────────────────── */
+    /* ── Misc ───────────────────────────────────────── */
     .state-msg {
       display: flex;
       align-items: center;
@@ -315,6 +610,17 @@ export class ResultComponent {
   @Input() queues: Queues = { microtasks: [], macrotasks: [] };
   @Input() loading = false;
   @Input() error = "";
+  @Input() actualOutput: string[] = [];
+  @Input() predictedOutput: string[] = [];
+  @Input() diff: DiffEntry[] = [];
+  @Input() concepts: string[] = [];
+  @Input() isCorrect: boolean | undefined = undefined;
+  @Input() hasPrediction = false;
+
+  get missingLines(): null[] {
+    const count = this.actualOutput.length - this.predictedOutput.length;
+    return count > 0 ? Array(count).fill(null) : [];
+  }
 
   classify(step: string): string {
     return classifyStep(step);

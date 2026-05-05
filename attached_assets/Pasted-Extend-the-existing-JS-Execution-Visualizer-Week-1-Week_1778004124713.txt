@@ -1,0 +1,313 @@
+Extend the existing **“JS Execution Visualizer”** (Week 1 + Week 2) by adding an **“Expectation vs Reality” learning layer**.
+
+This feature allows users to:
+
+1. Predict output before execution
+2. Compare with actual output
+3. See a clear explanation of WHY they were wrong (or right)
+
+---
+
+# 🎯 Goal
+
+Turn the tool into an **interactive interview practice system**, not just a simulator.
+
+---
+
+# 🧩 Features (STRICTLY WEEK 3)
+
+## 1. User Prediction Input (Frontend)
+
+Before running code, prompt user:
+
+UI:
+
+* Text input OR ordered list input
+* Label:
+  → “What do you think the output will be?”
+
+Example input:
+
+```text id="e9f8o4"
+start
+timeout
+promise
+end
+```
+
+Store as:
+
+```json id="8h7f9c"
+{
+  "predictedOutput": ["start", "timeout", "promise", "end"]
+}
+```
+
+---
+
+## 2. Backend Comparison Engine
+
+Extend `/analyze` API:
+
+### Input:
+
+```json id="93j2kd"
+{
+  "code": "...",
+  "predictedOutput": ["..."]
+}
+```
+
+### Output:
+
+```json id="4k9x2p"
+{
+  "actualOutput": ["start", "end", "promise", "timeout"],
+  "predictedOutput": ["start", "timeout", "promise", "end"],
+  "isCorrect": false,
+  "diff": [
+    {
+      "index": 1,
+      "expected": "end",
+      "got": "timeout",
+      "reason": "Macrotask executed before microtask in prediction"
+    }
+  ],
+  "concepts": ["event loop", "microtask queue", "macrotask queue"]
+}
+```
+
+---
+
+## 3. Output Extraction (IMPORTANT)
+
+Modify interpreter:
+
+* Capture ONLY console.log outputs into:
+
+```js id="a7c2m1"
+const actualOutput = [];
+```
+
+* Example:
+
+```js id="l3p0q9"
+actualOutput.push("start");
+```
+
+---
+
+## 4. Diff Algorithm
+
+Compare arrays:
+
+* If lengths differ → mark incorrect
+* Compare index by index
+* Generate mismatch objects:
+
+```js id="v8d4x0"
+{
+  index: i,
+  expected: actualOutput[i],
+  got: predictedOutput[i]
+}
+```
+
+---
+
+## 5. Reason Generator (Rule-Based, NOT AI)
+
+Do NOT use LLM yet.
+
+Create simple rule mapping:
+
+### Rules:
+
+IF:
+
+* Promise involved
+* setTimeout involved
+* wrong order between them
+
+THEN:
+
+```text id="t7z9r2"
+"Microtasks (Promises) execute before macrotasks (setTimeout)"
+```
+
+---
+
+IF:
+
+* variable logged before assignment
+
+THEN:
+
+```text id="h2y6k1"
+"Variable is hoisted and initialized as undefined"
+```
+
+---
+
+Map detected AST patterns → explanation strings
+
+---
+
+## 6. Concept Tagging
+
+Based on code, return:
+
+Examples:
+
+* "hoisting"
+* "event loop"
+* "microtask queue"
+* "execution context"
+
+---
+
+## 7. Frontend UI Changes
+
+## A. Prediction Input Section
+
+* Above editor OR modal before run
+
+---
+
+## B. Result Panel (NEW STRUCTURE)
+
+### Section 1: Your Prediction
+
+* Show user input
+
+### Section 2: Actual Output
+
+* Show correct result
+
+---
+
+### Section 3: Result Status
+
+* ✅ Correct
+* ❌ Incorrect
+
+---
+
+### Section 4: Mistake Breakdown
+
+Example:
+
+```text id="y6r2p8"
+At position 2:
+Expected: end
+You wrote: timeout
+
+Reason:
+Promises run before setTimeout due to microtask priority
+```
+
+---
+
+### Section 5: Concepts Involved
+
+* Show tags as clickable badges
+
+---
+
+## 8. Optional (if time permits)
+
+Highlight incorrect positions visually:
+
+* Red (wrong)
+* Green (correct)
+
+---
+
+# 🚫 Out of Scope
+
+* No AI explanations
+* No natural language parsing
+* No partial credit scoring
+* No user accounts
+* No history saving
+
+---
+
+# 🧪 Example
+
+Input code:
+
+```js id="c2x7m5"
+console.log("start");
+
+setTimeout(() => console.log("timeout"), 0);
+
+Promise.resolve().then(() => console.log("promise"));
+
+console.log("end");
+```
+
+User Prediction:
+
+```text id="n9p3z1"
+start
+timeout
+promise
+end
+```
+
+Actual:
+
+```text id="m4k2l8"
+start
+end
+promise
+timeout
+```
+
+System Output:
+
+* ❌ Incorrect
+* Reason:
+  → Promises execute before setTimeout
+
+---
+
+# 📁 Backend Changes
+
+* interpreter.js → collect actualOutput
+* add diffEngine.js
+* add conceptDetector.js
+
+---
+
+# 📁 Frontend Changes
+
+* Add prediction input component
+* Update result.component.ts to show:
+
+  * prediction
+  * actual
+  * diff
+  * explanation
+
+---
+
+# ⚠️ Critical Constraints
+
+* Keep explanations deterministic (rule-based)
+* Do NOT overcomplicate logic
+* Prioritize clarity and correctness
+
+---
+
+# ✅ Deliverables
+
+* User can predict output
+* System compares and highlights mistakes
+* Explanation is shown for incorrect answers
+* Concepts are tagged
+
+---
+
+This transforms the app from a simulator into an **interactive learning system**.

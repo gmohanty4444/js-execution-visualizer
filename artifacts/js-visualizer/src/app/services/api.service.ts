@@ -7,9 +7,21 @@ export interface Queues {
   macrotasks: string[];
 }
 
+export interface DiffEntry {
+  index: number;
+  expected: string;
+  got: string | undefined;
+  reason: string;
+}
+
 export interface AnalysisResult {
   steps: string[];
+  actualOutput: string[];
   queues: Queues;
+  predictedOutput?: string[];
+  isCorrect?: boolean;
+  diff?: DiffEntry[];
+  concepts?: string[];
 }
 
 @Injectable({ providedIn: "root" })
@@ -18,7 +30,11 @@ export class ApiService {
 
   constructor(private http: HttpClient) {}
 
-  analyze(code: string): Observable<AnalysisResult> {
-    return this.http.post<AnalysisResult>(this.analyzeUrl, { code });
+  analyze(code: string, predictedOutput?: string[]): Observable<AnalysisResult> {
+    const body: { code: string; predictedOutput?: string[] } = { code };
+    if (predictedOutput && predictedOutput.length > 0) {
+      body.predictedOutput = predictedOutput;
+    }
+    return this.http.post<AnalysisResult>(this.analyzeUrl, body);
   }
 }
